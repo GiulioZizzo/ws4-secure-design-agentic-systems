@@ -59,15 +59,17 @@ There are many different guardrails which have been developed to strengthen a de
 __Examples__ 
 
 1. *[Threat 11. Prompt Injection](https://github.com/cosai-oasis/ws4-secure-design-agentic-systems/blob/main/model-context-protocol-security.md#prompt-injection)*: Direct Guardrail Deployment.
+<br><br>
+*Example notebook: [function_calling_attack
+](https://github.com/GiulioZizzo/ws4-secure-design-agentic-systems/blob/main/examples/direct_input_filtering/example.ipynb)*
 
     There are many guardrail models to select from. Here, we illustrate an example using Granite Guardian 3.3 to block a traditional role-playing style jailbreak. Note that this is a non-adaptive adversary: the prompt may fool a given LLM without adequate safety alignment, but no steps were taken by the adversary to also evade the guardrail.
 
-    We setup granite to detect jailbreaks in the inputs as shown below. In this simple example, the guardrail detects and blocks the manipulation attempt. 
-
+    We setup granite to detect jailbreaks in the inputs as shown below. In this simple example, the guardrail detects and blocks the manipulation attempt.
   <p align="center">
     <img src="./images/gg_basic_setup.png" alt="Screenshot showing GG blocking a simple jailbreak" width="400"/>
   </p>
-  
+
   Granite Guardian output:
 
   <p align="center">
