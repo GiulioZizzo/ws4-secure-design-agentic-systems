@@ -60,8 +60,8 @@ __Examples__
 
 1. *[Threat 11. Prompt Injection](https://github.com/cosai-oasis/ws4-secure-design-agentic-systems/blob/main/model-context-protocol-security.md#prompt-injection)*: Direct Guardrail Deployment.
 <br><br>
-*Example notebook: [function_calling_attack
-](https://github.com/GiulioZizzo/ws4-secure-design-agentic-systems/blob/input_filtering/practical-guides/examples/direct_input_filtering/direct_guardrails.ipynb)*
+*Example notebook: [direct_guardrail_deployment
+](https://github.com/GiulioZizzo/ws4-secure-design-agentic-systems/blob/input_filtering/practical-guides/examples/direct_guardrails/direct_guardrails.ipynb)*
 
     There are many guardrail models to select from. Here, we illustrate an example using Granite Guardian 3.3 to block a traditional role-playing style jailbreak. Note that this is a non-adaptive adversary: the prompt may fool a given LLM without adequate safety alignment, but no steps were taken by the adversary to also evade the Granite Guardian guardrail.
 
@@ -100,8 +100,8 @@ __Examples__
 
   
 2. *[Threat 2. Tool Poisoning](https://github.com/cosai-oasis/ws4-secure-design-agentic-systems/blob/main/model-context-protocol-security.md#tool-poisoning):* MCP Tool Hijacking.<br><br>
-*Example notebook: [function_calling_attack
-](https://github.com/GiulioZizzo/ws4-secure-design-agentic-systems/blob/input_filtering/practical-guides/examples/function_calling_attack/example.ipynb)*
+*Example notebook: [function_hijacking
+](https://github.com/GiulioZizzo/ws4-secure-design-agentic-systems/blob/input_filtering/practical-guides/examples/function_hijacking/function_hijacking.ipynb)*
 <br><br>Within MCP the function name, signature, and description are returned to the LLM. There can be several manipulations performed. Potential tool manipulations can induce the LLM with tasks such as: always (or never!) selecting the manipulated tool regardless of user input, perform orthogonal tasks to the original tool call request, or in more subtle cases, the LLM may be coerced into chaining tools together in unintended sequences, passing malformed parameters, or escalating privileges by requesting tools that the user never authorized.
 
     Many of the classical attacks developed for jailbreaking can be adapted for this context. There are two key differences:
@@ -144,7 +144,7 @@ __Examples__
   
 3. [Threat 21. Command Injection](https://github.com/cosai-oasis/ws4-secure-design-agentic-systems/blob/main/model-context-protocol-security.md#command-injection) Obfuscated SQL Injection.
     
-    *Example notebook: [obfuscation_example](https://github.com/GiulioZizzo/ws4-secure-design-agentic-systems/blob/input_filtering/practical-guides/examples/obfuscation_example/example.ipynb)*
+    *Example notebook: [command_obfuscation](https://github.com/GiulioZizzo/ws4-secure-design-agentic-systems/blob/input_filtering/practical-guides/examples/command_obfuscation/command_obfuscation.ipynb)*
 
     In the context of MCP tool calls, do not overlook blocking and filtering for traditional cyber-security threats. Adversaries can embed attacks such as command injections, buffer overflows, and malicious URLs into the prompt for an LLM to execute with a particular tool. Further, the LLM is able to modify and de-obfuscate prompts prior to supplying them to the target tools.	
 
@@ -187,9 +187,9 @@ The disadvantage is that there are additional overheads for blocking malicious p
 
 __Examples__ 
 
-1. *[Threat 11. Prompt Injection](https://github.com/cosai-oasis/ws4-secure-design-agentic-systems/blob/main/model-context-protocol-security.md#prompt-injection)*: Direct Prompt Injection. 
+1. *[Threat 11. Prompt Injection](https://github.com/cosai-oasis/ws4-secure-design-agentic-systems/blob/main/model-context-protocol-security.md#prompt-injection)*: Adaptive Prompt Injection. 
 
-    *Example notebook: [output_filtering](https://github.com/GiulioZizzo/ws4-secure-design-agentic-systems/blob/input_filtering/practical-guides/examples/llm_output_filtering/output_filtering.ipynb)*
+    *Example notebook: [output_filtering](https://github.com/GiulioZizzo/ws4-secure-design-agentic-systems/blob/input_filtering/practical-guides/examples/output_filtering/output_filtering.ipynb)*
 
     In this example we use the [ARES](https://github.com/IBM/ares) red teaming library to craft a jailbreak that will bypass an input guardrail and subvert the target LLM. In the screenshot below the guardrail and LLM details are in the dictionaries `llm_config` and `defence_config`.
 
@@ -243,7 +243,7 @@ __Example__
 
 1. *[Threat 2. Tool Poisoning](https://github.com/cosai-oasis/ws4-secure-design-agentic-systems/blob/main/model-context-protocol-security.md#tool-poisoning)*: Re-writing Defence
 
-    *Example notebook: [re-writing_defence](https://github.com/GiulioZizzo/ws4-secure-design-agentic-systems/blob/input_filtering/practical-guides/examples/re-writing_defence/example.ipynb)*
+    *Example notebook: [detached_defence](https://github.com/GiulioZizzo/ws4-secure-design-agentic-systems/blob/input_filtering/practical-guides/examples/detached_defence/detached_defence.ipynb)*
 
     In popular tool poisoning attacks, the function description is a frequent attack vector as it is directly returned to the LLM in MCP and can be freely modified without affecting code functionality. 
 
