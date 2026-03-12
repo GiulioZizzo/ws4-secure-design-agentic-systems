@@ -3,11 +3,13 @@
 
 ## Overview
 
-Jailbreaking and prompt injection attacks are widely seen in both academic literature and through practical use-cases. At their core, these attacks try and circumvent aligment, usage directives,  and intended workflows to obtain harmful results.
+[Jailbreaking](https://azure.github.io/PyRIT/code/converters/0_converters.html) and [prompt injection](https://github.com/GraySwanAI/nanoGCG?tab=readme-ov-file#usage) attacks are widely seen in both [academic](https://llm-attacks.org/) [literature](https://arxiv.org/pdf/2401.05566) and through [practical](https://www.anthropic.com/research/small-samples-poison) [use-cases](https://www.anthropic.com/research/many-shot-jailbreaking). At their core, these attacks try and circumvent aligment, usage directives,  and intended workflows to obtain harmful results.
 
-In the case of MCP there is an additional threat surface on top of the direct user prompts potentially being malicious. Specifically, the tools themselves can contain prompt injection attacks to break the intended workflow.
+In the case of MCP there is an additional threat surface on top of the direct user prompts potentially being malicious. Specifically, the tools themselves can have the prompts manipulated such that the attack breaks the intended schema
 
-Although many LLM attacks were developed with chatbot alignment breaking as their primary goal, the attack methods are generally transferable to MCP workflows.
+e.g. via [localizable proxies](https://www.hiddenlayer.com/research/agentic-shadowlogic#how-phi-4-works-and-where-we-strike), that are difficult to detect, and [can result in theft of IP](https://github.com/rabbidave/minimax-skill-analysis?tab=readme-ov-file#13-byte-identical-files)
+
+Although many LLM attacks were developed with chatbot alignment breaking as their primary goal, the attack methods are generally transferable to MCP workflows; given the models cannot [distinguish instruction from attack](https://brave.com/blog/unseeable-prompt-injections/) in the [latent space](https://zenity.io/company-overview/newsroom/company-news/zenity-labs-discloses-pleasefix-perplexedagent-vulnerability)
 
 Defending against this threat remains an open research problem, and many defence algorithms have been proposed to harden LLM based systems against attacks. One of the most common defence strategies is input filtering and data sanitization. Often referred to as guardrails, these are external components to an LLM that can detect, block, or disrupt attempted attacks.
 
