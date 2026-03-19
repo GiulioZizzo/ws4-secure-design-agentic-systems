@@ -3,15 +3,42 @@
 
 ## Overview
 
-Jailbreaking and prompt injection attacks are widely seen in both academic literature and through practical use-cases. At their core, these attacks try and circumvent aligment, usage directives,  and intended workflows to obtain harmful results.
+[Jailbreaking](https://azure.github.io/PyRIT/code/converters/0_converters.html) and [prompt injection](https://github.com/GraySwanAI/nanoGCG?tab=readme-ov-file#usage) attacks are widely seen in both [academic](https://llm-attacks.org/) [literature](https://arxiv.org/pdf/2401.05566) and through [practical](https://www.anthropic.com/research/small-samples-poison) [use-cases](https://www.anthropic.com/research/many-shot-jailbreaking). At their core, these attacks try and circumvent aligment, usage directives,  and intended workflows to obtain harmful results.
 
-In the case of MCP there is an additional threat surface on top of the direct user prompts potentially being malicious. Specifically, the tools themselves can contain prompt injection attacks to break the intended workflow.
+In the case of MCP there is an additional threat surface on top of the direct user prompts potentially being malicious. Specifically, the tools themselves can have the prompts manipulated such that the attack breaks the intended schema
 
-Although many LLM attacks were developed with chatbot alignment breaking as their primary goal, the attack methods are generally transferable to MCP workflows.
+e.g. via [localizable proxies](https://www.hiddenlayer.com/research/agentic-shadowlogic#how-phi-4-works-and-where-we-strike), that are difficult to detect, and [can result in theft of IP](https://github.com/nullpond/minimax-skill-analysis?tab=readme-ov-file#13-byte-identical-files)
+
+Although many LLM attacks were developed with chatbot alignment breaking as their primary goal, the attack methods are generally transferable to MCP workflows; given the models cannot [distinguish instruction from attack](https://brave.com/blog/unseeable-prompt-injections/) in the [latent space](https://zenity.io/company-overview/newsroom/company-news/zenity-labs-discloses-pleasefix-perplexedagent-vulnerability)
 
 Defending against this threat remains an open research problem, and many defence algorithms have been proposed to harden LLM based systems against attacks. One of the most common defence strategies is input filtering and data sanitization. Often referred to as guardrails, these are external components to an LLM that can detect, block, or disrupt attempted attacks.
 
-We will step through 6 principles when applying guardrails for MCP systems, giving concrete examples of practical implementations and deployment setups where appropriate.
+We will step through 7 principles when applying guardrails for MCP systems, giving concrete examples of practical implementations and deployment setups where appropriate.
+
+### Threat Focus: Tool and Capability Theft
+
+<div style="background-color:rgba(164, 84, 250, 0.14); border: 2px solid #990066; padding: 10px;">
+The most consequential threat to MCP ecosystems is the wholesale theft of tool implementations, skill codebases, and model capabilities. Unlike prompt injection, which subverts a single session, tool theft extracts durable intellectual property that can be replicated, redistributed, and monetized indefinitely.
+</div>
+
+<br>
+
+__Rationale__
+
+MCP's design exposes tool names, descriptions, parameter schemas, and — in many skill-based agent ecosystems — the underlying source code and configuration files to any connected client. This creates an extraction surface that goes well beyond what traditional API consumers can access: the tool *implementation* becomes a first-class asset visible to any agent, model, or intermediary in the chain.
+
+This is not a theoretical concern. There are documented cases of verbatim tool theft at both the **codebase level** and the **capability level**:
+
+1. __Codebase-Level Theft:__ Analysis of [MiniMax's office document skills](https://github.com/nullpond/minimax-skill-analysis?tab=readme-ov-file#13-byte-identical-files) revealed 13 byte-identical files shipped from Moonshot AI's (Kimi) skill repository. The evidence included: 8 PDF skill scripts that were byte-for-byte identical, compiled .NET binaries containing PDB paths referencing `kimiagent/.kimi/skills/`, and hardcoded usernames (`kimi`) persisting in browser helper scripts. The modifications MiniMax applied were cosmetic — import renames, class renames, and author string replacements (`"Kimi"` → `"Assistant"`) — while the actual logic remained character-for-character identical. When the theft was publicly documented, MiniMax removed the affected skills entirely.
+
+    This attack pattern is particularly dangerous for MCP ecosystems because skill files, SKILL.md documents, and tool implementations are typically exposed in plaintext to any agent or model that connects. Unlike compiled software, there is no binary obfuscation barrier; the implementation *is* the interface.
+
+2. __Capability-Level Theft (Distillation):__ At industrial scale, the same actors have conducted systematic capability extraction against frontier models. Anthropic [documented coordinated campaigns](https://www.anthropic.com/research/detecting-and-countering-model-distillation) by DeepSeek, Moonshot AI, and MiniMax involving over 24,000 fraudulent accounts and 16 million exchanges, specifically targeting agentic reasoning, tool use, and coding capabilities. MiniMax alone drove over 13 million of these exchanges, and when a new model was released mid-campaign, pivoted within 24 hours to redirect traffic to the updated system. The extracted outputs were used to train competing models via distillation.
+
+    For MCP specifically, this means that tool *behavior* — not just tool *code* — is an extractable asset. An attacker who can invoke your tools at scale can reconstruct the decision logic, parameter handling, and output formatting without ever seeing the source.
+
+These two vectors — static codebase theft and dynamic capability extraction — are complementary. An attacker can steal tool implementations directly where exposed, and reverse-engineer behavioral capabilities through systematic invocation where they are not. Together they represent the most significant IP risk in agentic tool ecosystems, and should be a primary consideration when developing the threat model (*Principle #1*) and scoping red teaming exercises (*Principle #5*).
+
 
 ### Principle 1: Threat Modelling
 
@@ -34,7 +61,7 @@ Thus, a specific threat model should be used to guide the selection of guardrail
     - Acceptable Risk Tolerance - not all vulnerabilities will require the same level of protection: what is required for use case to justify the costs incurred by defences?
     - Attack Surfaces - account for the different inputs to the LLM and if they could be manipulated: is it just the input prompt, or would tools, RAG documents, system prompt modification, etc be within scope?
 
-2. __Distinguish Between Attack Objective and Attack Strategy:__ The attack objective (e.g. an attacker may want to obtain a malicious response to *“How do I build a bomb?”* or trigger an incorrect function in an MCP workflow) represents one style of data variation, and one axis along which different attacks can originate. Orthogonally, the attack strategy (e.g. the algorithm actually employed to circumvent the model alignment such as GCG, AutoDAN, etc) is a separate variation that describes the method used to achieve the attack objective. Understanding the performance against both the attack objectives, and the attack strategy, is necessary to accurately determine the capabilities of the defence being employed.
+2. __Distinguish Between Attack Objective and Attack Strategy:__ The attack objective (e.g. an attacker may want to obtain a malicious response to *"How do I build a bomb?"* or trigger an incorrect function in an MCP workflow) represents one style of data variation, and one axis along which different attacks can originate. Orthogonally, the attack strategy (e.g. the algorithm actually employed to circumvent the model alignment such as GCG, AutoDAN, etc) is a separate variation that describes the method used to achieve the attack objective. Understanding the performance against both the attack objectives, and the attack strategy, is necessary to accurately determine the capabilities of the defence being employed.
 
 3. __Acceptable Performance Envelopes:__ Deploying guardrails will incur an unavoidable series of costs: this includes the computational resources to run the guardrail model, delays in pipeline execution causing latency, and the effects of false positives on user experience. Being explicit about the acceptable risk tolerance encourages balanced design, and prevents over-engineering of guardrails for hypothetical attackers which are not relevant to the deployment context.
 
@@ -53,7 +80,7 @@ __Rationale__
 
 Directly blocking malicious inputs is a well studied concept across many domains. For MCP, context filtering needs to be applied not just on the classical user input prompt, but also on the tools returned and their outputs, following the threat model for your specific use case. 
 
-There are many different guardrails which have been developed to strengthen a deployed LLM’s defensive posture. However, the breadth of potential jailbreaks, evasion techniques, and well studied attack strategies makes input filters prone to being evaded, and thus they should be viewed as a component within a broader multi-layered defence.
+There are many different guardrails which have been developed to strengthen a deployed LLM's defensive posture. However, the breadth of potential jailbreaks, evasion techniques, and well studied attack strategies makes input filters prone to being evaded, and thus they should be viewed as a component within a broader multi-layered defence.
 
 
 __Examples__ 
@@ -301,7 +328,7 @@ Understanding Red Teaming Limitations: Automated evaluations of attack success a
 ### Principle 6: Common Pitfalls
 
 __Overly Broad or Undefined Threat Models:__
-A frequent mistake is to define the threat model too vaguely, or attempting to defend against an unrealistically broad set of adversaries. A all-corners threat model (e.g. “defend against all jailbreaks” or “prevent any harmful output”), loses practical value making it less useful to inform defence design. This can result in misaligned expectations, high deployment costs, and defensive strategies that either aim too broadly, or do not target relevant risks. Careful scoping is needed for meaningful evaluations of guardrail defences.
+A frequent mistake is to define the threat model too vaguely, or attempting to defend against an unrealistically broad set of adversaries. A all-corners threat model (e.g. "defend against all jailbreaks" or "prevent any harmful output"), loses practical value making it less useful to inform defence design. This can result in misaligned expectations, high deployment costs, and defensive strategies that either aim too broadly, or do not target relevant risks. Careful scoping is needed for meaningful evaluations of guardrail defences.
 
 __Ignoring Compositional Failures:__
 Systems which combine multiple components such as LLMs, function calling, RAG, and guardrails, can display vulnerabilities which are not present when each component is evaluated individually. A misconception is assuming that because each component appears robust when tested on its own, the integrated system is similarly resilient.
@@ -311,3 +338,41 @@ Guardrails, attacks, and evaluation strategies are often evaluated on common ben
 
 __Underestimating Edge Cases:__
 Threat models focus on deliberate attackers, but in practice you should not neglect accounting for benign users who can produce ambiguous inputs that can degrade guardrail performance. Evaluation of the defence must also include analysis of edge cases that resemble adversarial prompts, but are benign in intent, which can be encountered with large user bases. If the evaluation does not account for this, guardrails may exhibit high false‑positive rates, harming user experience and blocking legitimate functionality.
+
+
+### Principle 7: Abstract to CLI — Reducing Tool Exposure via Code Mode
+
+<div style="background-color:rgba(164, 84, 250, 0.14); border: 2px solid #990066; padding: 10px;">
+A structural mitigation for both tool poisoning and tool theft is to decouple tool discovery from tool implementation. Rather than exposing rich tool descriptions and source code directly to the model, abstract tool interfaces into a CLI-like or SDK-like contract that the model writes code against, executed within a sandboxed environment.
+</div>
+
+<br>
+
+__Rationale__
+
+As discussed in the *Threat Focus* section above, MCP's standard tool-calling pattern exposes tool names, full descriptions, parameter schemas, and in skill-based ecosystems the underlying source code to every connected client. This creates a dual vulnerability: the descriptions serve as an attack vector for tool poisoning (*Principle #2, Example 2*), and the exposed implementations serve as an extraction target for IP theft.
+
+[Cloudflare's Code Mode pattern](https://blog.cloudflare.com/code-mode/) demonstrates an architectural alternative that addresses both problems simultaneously. Instead of presenting every MCP tool as a separate tool definition with full descriptions injected into the context window, Code Mode:
+
+   + **Converts MCP tools into a typed TypeScript API** with minimal doc-comment descriptions derived from the schema. The model writes code against this API rather than invoking tools via the special-token tool-calling mechanism.
+   + **Executes generated code in an isolated sandbox** (V8 isolates in Cloudflare's implementation) where the only available interfaces are the proxied MCP tool bindings. The sandbox has no general network access; it can only reach MCP servers through RPC bindings controlled by the host.
+   + **Hides API keys and authorization entirely** from the model. The binding provides an already-authorized client interface; the model never sees credentials, and therefore cannot exfiltrate them.
+   + **Reduces the exposed surface to two generic tools** (`search()` and `execute()`) regardless of the number of underlying endpoints. Cloudflare covers [2,500+ API endpoints in approximately 1,000 tokens](https://blog.cloudflare.com/code-mode-mcp/) — compared to the ~1M tokens required to express each endpoint as a native MCP tool.
+
+Anthropic independently explored a similar pattern in their [Code Execution with MCP](https://modelcontextprotocol.io/specification/2025-06-18) work, validating the general approach across multiple implementations.
+
+__Defensive Properties__
+
+From a tool-theft and tool-poisoning perspective, this pattern provides several properties that complement the guardrail-based defences discussed in the preceding principles:
+
+   + **Progressive disclosure limits reconnaissance:** The model (and by extension, any adversary operating through the model) cannot enumerate the full tool catalog upfront. Tool schemas are discovered dynamically via search, making systematic extraction significantly more expensive.
+   + **Implementation details are never exposed:** The sandbox receives typed stubs, not source code. The actual implementation remains server-side, inaccessible to the client. This directly mitigates the codebase-level theft vector described in the *Threat Focus* section.
+   + **Tool descriptions are removed as a direct attack vector:** This is architecturally equivalent to the re-writing defence discussed in *Principle #4*, but stronger: rather than reconstructing descriptions from code, the descriptions are replaced entirely by typed API signatures that the model writes code against. To poison tool selection, an attacker would need to generate adversarial *code* that compiles, executes in the sandbox, and produces useful output — a substantially harder problem than manipulating a natural-language description.
+   + **Behavioral extraction is constrained by the sandbox:** All tool invocations route through the host's RPC dispatcher, which can enforce rate limits, audit logging, and anomaly detection at the invocation layer — precisely the controls needed to detect distillation-style extraction campaigns.
+
+__Deployment Considerations__
+
+   + The Code Mode pattern requires a secure execution environment (V8 isolates, Deno sandboxes, WASM runtimes, or equivalent). Not all deployment contexts can provide this, particularly edge or embedded agent scenarios.
+   + The quality of agent behavior depends on the model's ability to write correct code against the typed API. Empirically, this works well for frontier models — LLMs have trained on vastly more real-world TypeScript than synthetic tool-calling examples — but may degrade with smaller or less capable models.
+   + Progressive discovery introduces latency (search → inspect schema → execute). For latency-sensitive workflows, a hybrid approach may be appropriate: Code Mode for external or high-value tools, native tool-calling for internal or low-risk tools.
+   + Monitoring and rate-limiting at the RPC dispatch layer is essential to realize the anti-extraction benefits. The architectural separation only helps if the chokepoint is actually instrumented.
